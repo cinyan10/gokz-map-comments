@@ -7,9 +7,6 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-// If the native isn't auto-exposed by your includes, uncomment this:
-// native Database GOKZ_DB_GetDatabase();
-
 Database gH_DB = null;
 bool g_bRateReminderSent[MAXPLAYERS + 1];
 
