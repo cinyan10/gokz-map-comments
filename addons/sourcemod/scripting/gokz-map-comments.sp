@@ -11,8 +11,7 @@
 // native Database GOKZ_DB_GetDatabase();
 
 Database gH_DB = null;
-bool g_bCommandPrompted[MAXPLAYERS + 1];
-bool g_bRatePrompted[MAXPLAYERS + 1];
+bool g_bRateReminderSent[MAXPLAYERS + 1];
 
 public Plugin myinfo =
 {
@@ -29,8 +28,6 @@ public void OnPluginStart()
 {
     RegConsoleCmd("sm_rate", Command_Rate, "Usage: !rate <1-5> [comment]");
     RegConsoleCmd("sm_comments", Command_ShowComments, "Show latest comments for this map");
-
-    HookEvent("player_spawn", Event_PlayerSpawn, EventHookMode_PostNoCopy);
 
     // DB
     gH_DB = GOKZ_DB_GetDatabase();
@@ -49,15 +46,8 @@ public void OnMapStart()
     // reset per-map prompt flags
     for (int i = 1; i <= MaxClients; i++)
     {
-        g_bCommandPrompted[i] = false;
-        g_bRatePrompted[i] = false;
+        g_bRateReminderSent[i] = false;
     }
-}
-
-public void OnClientDisconnect(int client)
-{
-    if (client > 0 && client <= MaxClients)
-        g_bCommandPrompted[client] = false;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -74,18 +64,10 @@ public Action Timer_RetryDB(Handle timer)
     return Plugin_Stop;
 }
 
-public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
+public void GOKZ_OnFirstSpawn(int client)
 {
-    int userid = event.GetInt("userid");
-    int client = GetClientOfUserId(userid);
     if (!IsValidClient(client)) return;
-
-    if (!g_bRatePrompted[client])
-        g_bRatePrompted[client] = true;
-    else
-        return;
-
-    CreateTimer(1.0, Timer_ShowAvgOne, GetClientUserId(client));
+    CreateTimer(2.0, Timer_ShowAvgOne, GetClientUserId(client));
 }
 
 public Action Timer_ShowAvgOne(Handle timer, any userid)
@@ -108,9 +90,9 @@ public Action Timer_PromptRateIfNeeded(Handle timer, any userid)
     int client = GetClientOfUserId(userid);
     if (!IsValidClient(client)) return Plugin_Stop;
 
-    if (!g_bCommandPrompted[client])
+    if (!g_bRateReminderSent[client])
     {
-        g_bCommandPrompted[client] = true;
+        g_bRateReminderSent[client] = true;
         GOKZ_PrintToChat(client, true, "{lime}Use {gold}!rate <1-5> [comment]{default} to rate the current map, for example: {gold}!rate 5 This map is great");
     }
     return Plugin_Stop;
